@@ -410,6 +410,27 @@
     opacity:1;
     margin-top:20px;
   }
+
+  .instapay-link-btn{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:8px;
+  width:100%;
+  background:var(--sage-bright);
+  color:var(--white);
+  text-decoration:none;
+  font-family:'JetBrains Mono',monospace;
+  font-size:13.5px;
+  letter-spacing:0.02em;
+  padding:13px 14px;
+  border-radius:4px;
+  transition:background .2s ease, transform .2s ease;
+}
+.instapay-link-btn:hover{
+  background:var(--sage);
+  transform:translateY(-1px);
+}
   #instapay-field.show{
     max-height:520px;
   }
@@ -716,11 +737,17 @@
           </div>
 
           <div id="instapay-field" class="conditional-field">
-            <div class="field" style="margin-top:0; margin-bottom:12px;">
-              <label for="instapayRef">Transfer Reference / Sender's Number</label>
-              <input type="text" id="instapayRef" placeholder="e.g. 01xxxxxxxxx or transaction ID">
-            </div>
+  <div class="field" style="margin-top:0; margin-bottom:12px;">
+    <label>Pay with InstaPay</label>
+    <a href="https://ipn.eg/S/youssefehabf/instapay/6bXtSc" target="_blank" rel="noopener" class="instapay-link-btn">
+      Open InstaPay Link to Pay →
+    </a>
+  </div>
 
+  <div class="field" style="margin-top:0; margin-bottom:12px;">
+    <label for="instapayRef">Transfer Reference / Sender's Number</label>
+    <input type="text" id="instapayRef" placeholder="e.g. 01xxxxxxxxx or transaction ID">
+  </div>
             <div class="field" style="margin-bottom:10px;">
               <label>Payment Proof (optional)</label>
               <label class="file-drop" id="fileDrop" for="proofFile">
