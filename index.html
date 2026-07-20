@@ -416,6 +416,18 @@
   .choice-card input{accent-color:var(--sage-bright);}
   .choice-card .c-title{font-family:'Fraunces',serif; font-size:15.5px; margin-bottom:2px; color:var(--navy);}
   .choice-card .c-sub{font-size:12px; color:var(--steel);}
+  .choice-card.disabled{
+    opacity:0.45;
+    cursor:not-allowed;
+    pointer-events:none;
+  }
+  .payment-note{
+    font-size:12.5px;
+    color:var(--sage);
+    margin-top:10px;
+    display:none;
+  }
+  .payment-note.show{display:block;}
 
   .conditional-field{
     max-height:0;
@@ -697,6 +709,12 @@
         </div>
 
         <div class="field">
+          <label for="printName">Print a Name on the Bag <span style="color:var(--steel); font-weight:400;">(optional)</span></label>
+          <input type="text" id="printName" placeholder="e.g. Dr. Sara Ahmed" maxlength="30">
+          <p style="font-size:12px; color:var(--steel); margin:8px 0 0; font-weight:300;">We'll print this name on the front of the bag. Leave blank for no personalization. Applies to all bags in your order.</p>
+        </div>
+
+        <div class="field">
           <label>Fulfillment<span class="req">*</span></label>
           <div class="choice-options" role="radiogroup" aria-label="Pickup or delivery">
             <label class="choice-card" data-method="pickup">
@@ -754,7 +772,7 @@
               <input type="radio" name="payment" value="Cash" required>
               <div>
                 <div class="c-title">Cash</div>
-                <div class="c-sub">Pay in cash on pickup or delivery</div>
+                <div class="c-sub">Pay in cash — pickup only</div>
               </div>
             </label>
             <label class="choice-card" data-method="instapay">
@@ -765,6 +783,7 @@
               </div>
             </label>
           </div>
+          <p class="payment-note" id="paymentNote">🚚 Delivery orders are paid via InstaPay only.</p>
 
           <div id="instapay-field" class="conditional-field">
   <div class="field" style="margin-top:0; margin-bottom:12px;">
@@ -961,6 +980,25 @@
   const govSelect = document.getElementById('gov');
   const addressInput = document.getElementById('address');
 
+  // payment toggle refs (used by both the payment cards and the fulfillment toggle below)
+  const payCards = document.querySelectorAll('.choice-card[data-method="cod"], .choice-card[data-method="instapay"]');
+  const codCard = document.querySelector('.choice-card[data-method="cod"]');
+  const instapayCard = document.querySelector('.choice-card[data-method="instapay"]');
+  const instapayField = document.getElementById('instapay-field');
+  const paymentNote = document.getElementById('paymentNote');
+
+  function selectPayment(method){
+    payCards.forEach(c => c.classList.remove('active'));
+    const card = method === 'InstaPay' ? instapayCard : codCard;
+    card.classList.add('active');
+    card.querySelector('input').checked = true;
+    if(method === 'InstaPay'){
+      instapayField.classList.add('show');
+    } else {
+      instapayField.classList.remove('show');
+    }
+  }
+
   fulfillmentCards.forEach(card => {
     card.addEventListener('click', () => {
       fulfillmentCards.forEach(c => c.classList.remove('active'));
@@ -973,29 +1011,30 @@
         pickupField.classList.remove('show');
         govSelect.required = true;
         addressInput.required = true;
+
+        // Delivery orders are InstaPay only — lock out Cash
+        codCard.classList.add('disabled');
+        paymentNote.classList.add('show');
+        selectPayment('InstaPay');
       } else {
         pickupField.classList.add('show');
         deliveryField.classList.remove('show');
         govSelect.required = false;
         addressInput.required = false;
+
+        // Pickup orders can use either payment method again
+        codCard.classList.remove('disabled');
+        paymentNote.classList.remove('show');
       }
       updateSummary();
     });
   });
 
   // payment toggle
-  const payCards = document.querySelectorAll('.choice-card[data-method="cod"], .choice-card[data-method="instapay"]');
-  const instapayField = document.getElementById('instapay-field');
   payCards.forEach(card => {
     card.addEventListener('click', () => {
-      payCards.forEach(c => c.classList.remove('active'));
-      card.classList.add('active');
-      card.querySelector('input').checked = true;
-      if(card.dataset.method === 'instapay'){
-        instapayField.classList.add('show');
-      } else {
-        instapayField.classList.remove('show');
-      }
+      if(card.classList.contains('disabled')) return;
+      selectPayment(card.querySelector('input').value);
     });
   });
 
@@ -1045,6 +1084,7 @@
     const fulfillmentInput = document.querySelector('input[name=fulfillment]:checked');
     const paymentInput = document.querySelector('input[name=payment]:checked');
     const notes = document.getElementById('notes').value.trim();
+    const printName = document.getElementById('printName').value.trim();
     const instapayRef = document.getElementById('instapayRef').value.trim();
     const gov = govSelect.value;
     const address = addressInput.value.trim();
@@ -1084,7 +1124,11 @@
       return;
     }
 
-    const payment = paymentInput.value;
+    let payment = paymentInput.value;
+    if(fulfillmentValue === 'Delivery' && payment !== 'InstaPay'){
+      // Delivery orders are InstaPay only
+      payment = 'InstaPay';
+    }
     const deliveryFee = fulfillmentValue === 'Delivery' ? DELIVERY_FEE : 0;
     const total = parseInt(selectedPackage.price, 10) + deliveryFee;
 
@@ -1092,6 +1136,9 @@
     msg += `Name: ${name}%0A`;
     msg += `Mobile: ${phone}%0A`;
     msg += `Color: ${colorText}%0A`;
+    if(printName){
+      msg += `Print Name on Bag: ${printName}%0A`;
+    }
     msg += `Bundle: ${selectedPackage.qty} ${selectedPackage.qty === "1" ? "bag" : "bags"} — ${selectedPackage.price} EGP%0A`;
     msg += `Fulfillment: ${fulfillmentValue}%0A`;
     if(fulfillmentValue === 'Delivery'){
